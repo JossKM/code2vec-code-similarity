@@ -8,6 +8,7 @@ import tensorflow as tf
 from tensorflow import norm
 from tensorflow import losses
 from datetime import datetime, timedelta # for logging
+import os
 
 SHOW_TOP_CONTEXTS = 10
 MAX_PATH_LENGTH = 8
@@ -16,6 +17,7 @@ JAR_PATH = 'JavaExtractor/JPredict/target/JavaExtractor-0.0.1-SNAPSHOT.jar'
 
 class InteractivePredictor:
     exit_keywords = ['exit', 'quit', 'q']
+    delimiter = ','
 
     def __init__(self, config, model):
         model.predict([])
@@ -41,34 +43,32 @@ class InteractivePredictor:
         file.close()
 
     def log(self, string: str):
-        self.appendFile(logFilePath, string + '\n')
+        self.appendFile(self.logFilePath, string + '\n')
 
     def predict(self):
-        print('wtf\n')
         startTime = datetime.now() #for stats afterward
         #Create output files
         startTimeString = startTime.strftime('%d-%m-%Y_%H-%M-%S')
         logFilePath = "outputs/logs/log_" + startTimeString + ".txt" #logging info
-        #inputFilePath = 'inputs/'
+        inputFilePath = os.path.join(os.getcwd(),'inputs')
         outputFilePath = 'outputs/vectors_' + startTimeString + '.csv' #results of crawl
         self.writeFile(filepath=logFilePath, dataToWrite=startTimeString + '\n')
         self.writeFile(filepath=outputFilePath, dataToWrite='')
-        self.appendFile(filepath=outputFilePath, dataToWrite=delimiter.join(["codeIndex", "codeName", "vector"])+'\n')
+        self.appendFile(filepath=outputFilePath, dataToWrite=self.delimiter.join(["codeIndex", "filename", "codeName", "predicted name", "vector"])+'\n')
         
         lastCodeVector = np.ndarray(0)
-        input_filename = 'Input.java'
         print('Starting interactive prediction...')
 
         codeIndex = 0
-        while True:
-            print(
-                'Modify the file: "%s" and press any key when ready, or "q" / "quit" / "exit" to exit' % input_filename)
-            user_input = input()
-            if user_input.lower() in self.exit_keywords:
-                print('Exiting...')
-                return
+        for input_filename in os.listdir(inputFilePath):        
+            # print(
+            #     'Modify the file: "%s" and press any key when ready, or "q" / "quit" / "exit" to exit' % input_filename)
+            # user_input = input()
+            # if user_input.lower() in self.exit_keywords:
+            #     print('Exiting...')
+            #     return
             try:
-                predict_lines, hash_to_string_dict = self.path_extractor.extract_paths(input_filename)
+                predict_lines, hash_to_string_dict = self.path_extractor.extract_paths(os.path.join(inputFilePath,input_filename))
             except ValueError as e:
                 print(e)
                 continue
@@ -84,21 +84,26 @@ class InteractivePredictor:
                 for attention_obj in method_prediction.attention_paths:
                     print('%f\tcontext: %s,%s,%s' % (
                     attention_obj['score'], attention_obj['token1'], attention_obj['path'], attention_obj['token2']))
+               
+               
                 if self.config.EXPORT_CODE_VECTORS:
                     vector_string = ' '.join(map(str, raw_prediction.code_vector))
-                    delimiter = ','
-                    lineToWrite = delimiter.join([codeIndex, method_prediction.original_name, vector_string])
+                    
+                    #write line
+                    lineToWrite = self.delimiter.join([str(codeIndex), input_filename, method_prediction.original_name, str(method_prediction.predictions[0]['name']), vector_string])
                     self.appendFile(filepath=outputFilePath, dataToWrite=lineToWrite+'\n')
-                    #print('Code vector:')
-                    #print(' '.join(map(str, raw_prediction.code_vector)))
+                   
                     newCodeVector = raw_prediction.code_vector
                     if(lastCodeVector.size > 0):
                         #compare vectors
-                      
+                        print('Distance from last code:\n')
                         displacement_vector = np.subtract(newCodeVector,lastCodeVector)
                         distance = tf.norm(displacement_vector)
-                        print('Distance from last code:\n' + (str(distance)))
+                        tf.print(distance)
+
+                        print('Cosine Similarity with last code:\n')
                         cosine_sim = tf.losses.cosine_similarity(newCodeVector, lastCodeVector)
-                        print('Cosine Similarity with last code:\n' + str(cosine_sim))
+                        tf.print(cosine_sim)
+                        
                     lastCodeVector = newCodeVector
             codeIndex += 1
