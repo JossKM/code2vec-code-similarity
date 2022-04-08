@@ -2,12 +2,17 @@ import traceback
 
 from common import common
 from extractor import Extractor
+import numpy as np
+#from typing import Optional
+import tensorflow as tf
+from tensorflow import norm
+from tensorflow import losses
+from datetime import datetime, timedelta # for logging
 
 SHOW_TOP_CONTEXTS = 10
 MAX_PATH_LENGTH = 8
 MAX_PATH_WIDTH = 2
 JAR_PATH = 'JavaExtractor/JPredict/target/JavaExtractor-0.0.1-SNAPSHOT.jar'
-
 
 class InteractivePredictor:
     exit_keywords = ['exit', 'quit', 'q']
@@ -25,9 +30,36 @@ class InteractivePredictor:
         with open(input_filename, 'r') as file:
             return file.readlines()
 
+    def writeFile(self, filepath: str, dataToWrite: str):
+        file = open(filepath, 'w')
+        file.write(dataToWrite)
+        file.close()
+
+    def appendFile(self, filepath: str, dataToWrite: str):
+        file = open(filepath, 'a')
+        file.write(dataToWrite)
+        file.close()
+
+    def log(self, string: str):
+        self.appendFile(logFilePath, string + '\n')
+
     def predict(self):
+        print('wtf\n')
+        startTime = datetime.now() #for stats afterward
+        #Create output files
+        startTimeString = startTime.strftime('%d-%m-%Y_%H-%M-%S')
+        logFilePath = "outputs/logs/log_" + startTimeString + ".txt" #logging info
+        #inputFilePath = 'inputs/'
+        outputFilePath = 'outputs/vectors_' + startTimeString + '.csv' #results of crawl
+        self.writeFile(filepath=logFilePath, dataToWrite=startTimeString + '\n')
+        self.writeFile(filepath=outputFilePath, dataToWrite='')
+        self.appendFile(filepath=outputFilePath, dataToWrite=delimiter.join(["codeIndex", "codeName", "vector"])+'\n')
+        
+        lastCodeVector = np.ndarray(0)
         input_filename = 'Input.java'
         print('Starting interactive prediction...')
+
+        codeIndex = 0
         while True:
             print(
                 'Modify the file: "%s" and press any key when ready, or "q" / "quit" / "exit" to exit' % input_filename)
@@ -53,5 +85,20 @@ class InteractivePredictor:
                     print('%f\tcontext: %s,%s,%s' % (
                     attention_obj['score'], attention_obj['token1'], attention_obj['path'], attention_obj['token2']))
                 if self.config.EXPORT_CODE_VECTORS:
-                    print('Code vector:')
-                    print(' '.join(map(str, raw_prediction.code_vector)))
+                    vector_string = ' '.join(map(str, raw_prediction.code_vector))
+                    delimiter = ','
+                    lineToWrite = delimiter.join([codeIndex, method_prediction.original_name, vector_string])
+                    self.appendFile(filepath=outputFilePath, dataToWrite=lineToWrite+'\n')
+                    #print('Code vector:')
+                    #print(' '.join(map(str, raw_prediction.code_vector)))
+                    newCodeVector = raw_prediction.code_vector
+                    if(lastCodeVector.size > 0):
+                        #compare vectors
+                      
+                        displacement_vector = np.subtract(newCodeVector,lastCodeVector)
+                        distance = tf.norm(displacement_vector)
+                        print('Distance from last code:\n' + (str(distance)))
+                        cosine_sim = tf.losses.cosine_similarity(newCodeVector, lastCodeVector)
+                        print('Cosine Similarity with last code:\n' + str(cosine_sim))
+                    lastCodeVector = newCodeVector
+            codeIndex += 1

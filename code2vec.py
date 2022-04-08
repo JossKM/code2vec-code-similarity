@@ -3,7 +3,6 @@ from config import Config
 from interactive_predict import InteractivePredictor
 from model_base import Code2VecModelBase
 
-
 def load_model_dynamically(config: Config) -> Code2VecModelBase:
     assert config.DL_FRAMEWORK in {'tensorflow', 'keras'}
     if config.DL_FRAMEWORK == 'tensorflow':
