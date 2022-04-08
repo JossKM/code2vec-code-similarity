@@ -5,12 +5,22 @@
     "version": "0.2.0",
     "configurations": [
         {
+            "name": "Python: Current File",
+            "type": "python",
+            "request": "launch",
+            "program": "${file}",
+            "console": "integratedTerminal",
+            "justMyCode": true
+        },
+        {
             "name": "Python: code2vec",
             "request": "launch",
             "program": "${workspaceFolder}/code2vec.py",
             "args": [
-                "-v", "2",
-                "--load", "models/java-large-release/saved_model_iter3.release",
+                "-v",
+                "2",
+                "--load",
+                "models/java-large-release/saved_model_iter3.release",
                 "--predict",
                 "--export_code_vectors"
             ],
