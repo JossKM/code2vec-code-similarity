@@ -6,7 +6,7 @@ from tensorflow import losses
 import numpy as np
 
 columnNames = ['QCode', 'UserID', 'SolutionID', 'SourceFile', 'CodeName', 'PredictedName', 'Vector', 'MostSimilarCode', 'PlagiarismScore']
-vectorTablePath = '../outputs/vectors_08-04-2022_17-16-04.csv'
+vectorTablePath = 'D:/Projects/code2vec/outputs/vectors_08-04-2022_17-16-04.csv'
 outputTablePath = 'similarity.csv'
 
 class CodeDataEntry:
@@ -35,8 +35,12 @@ NUM_KEEP_SIMILAR = 4
 allCodeVectors = list()
 
 def computeSimilarity(entryA: CodeDataEntry, entryB: CodeDataEntry):
-    cosine_sim = tf.losses.cosine_similarity(entryA.vector, entryB.vector)
-    return cosine_sim.numpy()
+    #cosine_sim = tf.losses.cosine_similarity(entryA.vector, entryB.vector)
+    #return cosine_sim.numpy()
+
+    displacement_vector = np.subtract(entryA.vector, entryB.vector)
+    distance = tf.norm(displacement_vector)
+    return distance
 
 print('opening: ' + vectorTablePath + '\n')
 

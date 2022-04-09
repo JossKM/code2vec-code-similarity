@@ -6,5 +6,10 @@
 *.tar.gz
 **/log.txt
 *.pyc
-*outputs/*
-*inputs/files/*
+
+outputs/*
+inputs/files/*
+logs*
+CodeChefCrawler/output/*
+CodeChefCrawler/archive/*
+CodeChefCrawler/logs/*
