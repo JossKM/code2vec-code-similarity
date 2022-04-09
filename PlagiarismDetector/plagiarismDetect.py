@@ -39,7 +39,7 @@ def computeSimilarity(entryA: CodeDataEntry, entryB: CodeDataEntry):
     #return cosine_sim.numpy()
 
     displacement_vector = np.subtract(entryA.vector, entryB.vector)
-    distance = tf.norm(displacement_vector)
+    distance = tf.norm(displacement_vector).numpy()
     return distance
 
 print('opening: ' + vectorTablePath + '\n')

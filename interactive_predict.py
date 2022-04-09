@@ -23,8 +23,8 @@ class InteractivePredictor:
     #Create output files
     startTimeString = startTime.strftime('%d-%m-%Y_%H-%M-%S')
     logFilePath = "outputs/logs/log_" + startTimeString + ".txt" #logging info
-    inputFilePath = os.path.join(os.getcwd(),'inputs/files')
-    indexFilePath = os.path.join(os.getcwd(),'inputs/codeIndexTable.csv')
+    inputFilePath = os.path.join(os.getcwd(),'CodeChefCrawler/output')
+    indexFilePath = os.path.join(os.getcwd(),'CodeChefCrawler/codeIndexTable.csv')
     outputFilePath = 'outputs/vectors_' + startTimeString + '.csv'
     
 
