@@ -3,10 +3,7 @@ import traceback
 from common import common
 from extractor import Extractor
 import numpy as np
-#from typing import Optional
 import tensorflow as tf
-from tensorflow import norm
-from tensorflow import losses
 from datetime import datetime, timedelta # for logging
 import os
 import csv
@@ -24,7 +21,7 @@ class InteractivePredictor:
     startTimeString = startTime.strftime('%d-%m-%Y_%H-%M-%S')
     logFilePath = "outputs/logs/log_" + startTimeString + ".txt" #logging info
     inputFilePath = os.path.join(os.getcwd(),'CodeChefCrawler/output')
-    indexFilePath = os.path.join(os.getcwd(),'CodeChefCrawler/codeIndexTable.csv')
+    indexFilePath = os.path.join(os.getcwd(),'CodeChefCrawler/codeIndexTable2.csv')
     outputFilePath = 'outputs/vectors_' + startTimeString + '.csv'
     
 
@@ -61,7 +58,7 @@ class InteractivePredictor:
         #print('Starting interactive prediction...')
 
         with open(self.outputFilePath, 'w', newline='') as outputcsv:
-            columnNames = ['QCode', 'UserID', 'SolutionID', 'SourceFile', 'CodeName', 'PredictedName', 'Vector']
+            columnNames = ['QCode', 'UserID', 'SolutionID', 'SourceFile', 'Status', 'TimeTaken', 'MemTaken', 'CodeName', 'PredictedName', 'Vector']
             writer = csv.DictWriter(outputcsv, fieldnames = columnNames)
             writer.writeheader()
             outputcsv.close()
@@ -113,7 +110,7 @@ class InteractivePredictor:
                                 row['Vector'] = vector_string
                                 writer.writerow(row)
                                 outputcsv.close()
-
+                        break
                             #write line
                             # codeInfo = str(os.path.splitext(input_filename)[0])
                             # print(codeInfo + '\n')

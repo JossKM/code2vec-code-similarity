@@ -4,8 +4,7 @@ import tensorflow as tf
 from tensorflow import norm
 from tensorflow import losses
 import numpy as np
-
-columnNames = ['QCode', 'UserID', 'SolutionID', 'SourceFile', 'CodeName', 'PredictedName', 'Vector', 'MostSimilarCode', 'PlagiarismScore']
+columnNames = ['QCode', 'UserID', 'SolutionID', 'SourceFile',  'Status', 'TimeTaken', 'MemTaken', 'CodeName', 'PredictedName', 'Vector', 'MostSimilarCode', 'PlagiarismScore']
 vectorTablePath = 'D:/Projects/code2vec/outputs/vectors_08-04-2022_17-16-04.csv'
 outputTablePath = 'similarity.csv'
 
@@ -14,14 +13,20 @@ class CodeDataEntry:
     userID: str
     solutionID: int
     sourceFile: str
+    status: str
+    timeTaken: str
+    memTaken: str
     vector: np.ndarray
     similarities: list
 
-    def __init__(self, qCode: str, userID: str, solutionID: int, sourceFile: str, vector: np.ndarray, similarities: list):
+    def __init__(self, qCode: str, userID: str, solutionID: int, sourceFile: str,  status: str,  timeTaken: str,  memTaken: str, vector: np.ndarray, similarities: list):
         self.qCode = qCode
         self.userID = userID
         self.solutionID = solutionID
         self.sourceFile = sourceFile
+        self.status = status
+        self.timeTaken = timeTaken
+        self.memTaken = memTaken
         self.vector = vector
         self.similarities = similarities if similarities is not None else []
 
@@ -61,7 +66,7 @@ with open(vectorTablePath, 'r', newline='') as csvRead:
         solutionIDInt = int(row['SolutionID'].lstrip('S'))
         codeVectorString = row['Vector']
         codeVector = np.fromstring(codeVectorString, sep=' ')
-        codeData = CodeDataEntry(qCode=row['QCode'], userID=row['UserID'], solutionID=solutionIDInt, sourceFile=row['SourceFile'], vector=codeVector, similarities=list())
+        codeData = CodeDataEntry(qCode=row['QCode'], userID=row['UserID'], solutionID=solutionIDInt, sourceFile=row['SourceFile'], status=row['Status'], timeTaken=row['TimeTaken'], memTaken=row['MemTaken'], vector=codeVector, similarities=list())
         allCodeVectors.append(codeData)
 
         #print(str(codeVector) + '\n')
