@@ -1,17 +1,28 @@
+import matplotlib.pyplot as plt
 from asyncio import proactor_events
 from collections import namedtuple
 import csv
 from telnetlib import NOP
+from pyparsing import nums
 import tensorflow as tf
 from tensorflow import norm
 from tensorflow import losses
 import numpy as np
 
-#columnNamesProblems  = ['QCode', 'Mean', 'SolutionID', 'Distance', 'Radius', 'NumSolutions', 'MeanSuccess', 'DistSuccess', 'RadiusSuccess', 'NumSuccess', 'MeanWrong', 'DistWrong', 'RadiusWrong', 'NumWrong', 'MeanError', 'DistError', 'RadiusError', 'NumError']
-columnNamesProblems  = ['QCode', 'Mean', 'SolutionID', 'Distance', 'NumSolutions', 'MeanSuccess', 'SolutionIDSuccess', 'DistSuccess', 'NumSuccess', 'MeanWrong', 'SolutionIDWrong', 'DistWrong', 'NumWrong', 'MeanError', 'SolutionIDError', 'DistError', 'NumError']
+TITLE_DIST         = 'Distance'
+TITLE_DIST_SUCCESS = 'DistSuccess'
+TITLE_DIST_WRONG   = 'DistWrong'
+TITLE_DIST_ERROR   = 'DistError'
+TITLE_MEAN         = 'Mean'
+TITLE_MEAN_SUCCESS = 'MeanSuccess'
+TITLE_MEAN_WRONG   = 'MeanWrong'
+TITLE_MEAN_ERROR   = 'MeanError'
+
+#columnNamesProblems  = ['QCode', TITLE_MEAN, 'SolutionID', TITLE_DIST, 'Radius', 'NumSolutions', TITLE_MEAN_SUCCESS, TITLE_DIST_SUCCESS, 'RadiusSuccess', 'NumSuccess', TITLE_MEAN_WRONG, TITLE_DIST_WRONG, 'RadiusWrong', 'NumWrong', TITLE_MEAN_ERROR, TITLE_DIST_ERROR, 'RadiusError', 'NumError']
+columnNamesProblems  = ['QCode', TITLE_MEAN, 'SolutionID', TITLE_DIST, 'NumSolutions', TITLE_MEAN_SUCCESS, 'SolutionIDSuccess', TITLE_DIST_SUCCESS, 'NumSuccess', TITLE_MEAN_WRONG, 'SolutionIDWrong', TITLE_DIST_WRONG, 'NumWrong', TITLE_MEAN_ERROR, 'SolutionIDError', TITLE_DIST_ERROR, 'NumError']
 columnNamesSolutions = ['QCode', 'UserID', 'SolutionID', 'SourceFile',  'Status', 'TimeTaken', 'MemTaken', 'CodeName', 'PredictedName', 'Vector', 'MostSimilarCode', 'PlagiarismScore']
 vectorTablePath = 'D:/Projects/code2vec/outputs/vectors_09-04-2022_21-58-47-fixed.csv'
-outputTablePath = 'SubmissionAnalyzer/output/'
+outputPath = 'SubmissionAnalyzer/output/'
 
 
 class ProblemDataEntry:
@@ -101,7 +112,7 @@ print('opening: ' + vectorTablePath + '\n')
 #     writer = csv.DictWriter(csvfile, fieldnames = columnNamesSolutions)
 #     writer.writeheader()
 
-problemFileName = outputTablePath + 'All_Analysis' + '.csv'
+problemFileName = outputPath + 'All_Analysis' + '.csv'
 with open(problemFileName, 'a', newline='') as csvfile:
     writer = csv.DictWriter(csvfile, fieldnames = columnNamesProblems)
     writer.writeheader()
@@ -128,6 +139,23 @@ with open(vectorTablePath, 'r', newline='') as csvRead:
         #allCodeVectors.append(codeData)
 
 
+totalMeans = dict()
+zeroVectorOfCorrectDimensions = np.full_like(list(allProblems.values())[0].allSolutions[0].vector, 0.0) #first solution code vector
+totalMeans[TITLE_MEAN] =        zeroVectorOfCorrectDimensions
+totalMeans[TITLE_MEAN_SUCCESS] = zeroVectorOfCorrectDimensions
+totalMeans[TITLE_MEAN_WRONG] =   zeroVectorOfCorrectDimensions
+totalMeans[TITLE_MEAN_ERROR] =   zeroVectorOfCorrectDimensions
+numTotalMean = 0
+numTotalMeanSuccess = 0
+numTotalMeanWrong = 0
+numTotalMeanError = 0
+
+totalDistances = dict()
+totalDistances[TITLE_DIST] = list()
+totalDistances[TITLE_DIST_SUCCESS] = list()
+totalDistances[TITLE_DIST_WRONG] = list()
+totalDistances[TITLE_DIST_ERROR] = list()
+
 #Go through every problem
 problem: ProblemDataEntry
 for problem in allProblems.values():
@@ -135,15 +163,16 @@ for problem in allProblems.values():
     solutionList = problem.allSolutions
     numSolutions = len(solutionList)
     problem.numSolutions = numSolutions
+    numTotalMean += numSolutions
 
     #Compare every solution to this problem to every other one
     solutionA: CodeDataEntry
     solutionB: CodeDataEntry
 
-    problem.mean        = np.full_like(solutionList[0], 0.0)
-    problem.meanSuccess = np.full_like(solutionList[0], 0.0)
-    problem.meanWrong   = np.full_like(solutionList[0], 0.0)
-    problem.meanError   = np.full_like(solutionList[0], 0.0)
+    problem.mean        = zeroVectorOfCorrectDimensions
+    problem.meanSuccess = zeroVectorOfCorrectDimensions
+    problem.meanWrong   = zeroVectorOfCorrectDimensions
+    problem.meanError   = zeroVectorOfCorrectDimensions
 
     for idxA in range(0, numSolutions):
         solutionA = solutionList[idxA]
@@ -199,12 +228,20 @@ for problem in allProblems.values():
     
 
     problem.mean        = problem.mean          / problem.numSolutions
+    totalMeans[TITLE_MEAN] = np.add(totalMeans[TITLE_MEAN], problem.mean)
     if(problem.numSuccess > 0):
         problem.meanSuccess = problem.meanSuccess   / problem.numSuccess
+        totalMeans[TITLE_MEAN_SUCCESS] = np.add(totalMeans[TITLE_MEAN_SUCCESS], problem.mean)
+        numTotalMeanSuccess += problem.numSuccess
     if(problem.numWrong > 0):
         problem.meanWrong   = problem.meanWrong     / problem.numWrong
+        totalMeans[TITLE_MEAN_WRONG] = np.add(totalMeans[TITLE_MEAN_WRONG], problem.mean)
+        numTotalMeanWrong += problem.numWrong
     if(problem.numError > 0):
         problem.meanError   = problem.meanError     / problem.numError
+        totalMeans[TITLE_MEAN_ERROR] = np.add(totalMeans[TITLE_MEAN_ERROR], problem.mean)
+        numTotalMeanError += problem.numError
+       # totalMeans[TITLE_MEAN_ERROR].append(problem.meanError) 
 
     #Now we can compute distances from the mean...
     # problem.distSuccess = distanceBetween(problem.meanSuccess, problem.mean)
@@ -229,31 +266,35 @@ for problem in allProblems.values():
     problem.distSuccess.sort(reverse=False, key=lambda i: i[0]) #sort by most similar (smallest number)
     problem.distWrong.sort(reverse=False, key=lambda i: i[0]) #sort by most similar (smallest number)
     problem.distError.sort(reverse=False, key=lambda i: i[0]) #sort by most similar (smallest number)
-
+    
+    totalDistances[TITLE_DIST].extend(problem.distances)
+    totalDistances[TITLE_DIST_SUCCESS].extend(problem.distSuccess)
+    totalDistances[TITLE_DIST_WRONG].extend(problem.distWrong)
+    totalDistances[TITLE_DIST_ERROR].extend(problem.distError)
 
     #Write to file
     #problemFileName = outputTablePath + str(problem.qCode) + '_Analysis' + '.csv'
-    problemFileName = outputTablePath + 'All_Analysis' + '.csv'
+    problemFileName = outputPath + 'All_Analysis' + '.csv'
     with open(problemFileName, 'a', newline='') as csvfile:
         writer = csv.DictWriter(csvfile, fieldnames = columnNamesProblems)
-        writer.writeheader()
+        #writer.writeheader()
 
         newRow = dict()
         newRow['QCode'] = problem.qCode
-        newRow['Mean'] = ' '.join(map(str, problem.mean))
-        newRow['SolutionID'] = '[Problem Overall]'
-        newRow['Distance'] = 0
+        newRow[TITLE_MEAN] = ' '.join(map(str, problem.mean))
+        #newRow['SolutionID'] = '[Problem Overall]'
+        #newRow[TITLE_DIST] = 0
         #newRow['Radius'] = problem.distances[len(problem.distances)-1]
-        newRow['MeanSuccess'] = 'N/A' if problem.numSuccess < 1 else ' '.join(map(str, problem.meanSuccess))
-        #newRow['DistSuccess'] = problem.distSuccess
+        newRow[TITLE_MEAN_SUCCESS] = 'N/A' if problem.numSuccess < 1 else ' '.join(map(str, problem.meanSuccess))
+        #newRow[TITLE_DIST_SUCCESS] = problem.distSuccess
         #newRow['RadiusSuccess'] = problem.distSuccess[len(problem.distSuccess)-1]
         newRow['NumSuccess'] = problem.numSuccess
-        newRow['MeanWrong'] = 'N/A' if problem.numWrong < 1 else' '.join(map(str, problem.meanWrong))
-        #newRow['DistWrong'] = problem.distWrong
+        newRow[TITLE_MEAN_WRONG] = 'N/A' if problem.numWrong < 1 else' '.join(map(str, problem.meanWrong))
+        #newRow[TITLE_DIST_WRONG] = problem.distWrong
         #newRow['RadiusWrong'] = problem.radiusWrong
         newRow['NumWrong'] = problem.numWrong
-        newRow['MeanError'] = 'N/A' if problem.numError < 1 else' '.join(map(str, problem.meanError))
-        #newRow['DistError'] = problem.distError
+        newRow[TITLE_MEAN_ERROR] = 'N/A' if problem.numError < 1 else' '.join(map(str, problem.meanError))
+        #newRow[TITLE_DIST_ERROR] = problem.distError
         #newRow['RadiusError'] = problem.radiusError
         newRow['NumError'] = problem.numError
         writer.writerow(newRow)
@@ -264,29 +305,44 @@ for problem in allProblems.values():
         for distance in problem.distances:
             newRow = dict()
             newRow['SolutionID']        = distance[1]
-            newRow['Distance']          = distance[0]
+            newRow[TITLE_DIST]          = distance[0]
             writer.writerow(newRow)
 
         for distance in problem.distSuccess:
             newRow = dict()
             newRow['SolutionIDSuccess'] = distance[1]
-            newRow['DistSuccess']       = distance[0]
+            newRow[TITLE_DIST_SUCCESS]       = distance[0]
             writer.writerow(newRow)
 
         for distance in problem.distWrong:
             newRow = dict()
             newRow['SolutionIDWrong']   = distance[1]
-            newRow['DistWrong']         = distance[0]
+            newRow[TITLE_DIST_WRONG]         = distance[0]
             writer.writerow(newRow)
 
         for distance in problem.distError:
             newRow = dict()
             newRow['SolutionIDError']   = distance[1]
-            newRow['DistError']         = distance[0]
+            newRow[TITLE_DIST_ERROR]         = distance[0]
             writer.writerow(newRow)
 
     csvfile.close()
 
+#Calculate overall totals
+totalMeans[TITLE_MEAN] /=        numTotalMean
+totalMeans[TITLE_MEAN_SUCCESS] /= numTotalMeanSuccess
+totalMeans[TITLE_MEAN_WRONG] /=   numTotalMeanWrong
+totalMeans[TITLE_MEAN_ERROR] /=   numTotalMeanError
+
+#Plot distance data in a box-and-whisker chart
+data = [totalDistances[TITLE_DIST], totalDistances[TITLE_DIST_SUCCESS], totalDistances[TITLE_DIST_WRONG], totalDistances[TITLE_DIST_ERROR]]
+figure = plt.figure(figsize=(12, 10))
+axes = figure.add_axes([0,0,1,1])
+boxPlot = axes.boxplot(data)
+plt.show()
+
+figure.savefig(outputPath + 'meanDistancesFigure.png')
+
 print('done all jobs!\n')
 
-#columnNamesProblems  = ['QCode', 'Mean', 'SolutionID', 'Distance', 'NumSolutions', 'MeanSuccess', 'SolutionIDSuccess', 'DistSuccess', 'NumSuccess', 'MeanWrong', 'SolutionIDWrong' 'DistWrong', 'NumWrong', 'MeanError', 'SolutionIDError' 'DistError', 'NumError']
+#columnNamesProblems  = ['QCode', TITLE_MEAN, 'SolutionID', TITLE_DIST, 'NumSolutions', TITLE_MEAN_SUCCESS, 'SolutionIDSuccess', TITLE_DIST_SUCCESS, 'NumSuccess', TITLE_MEAN_WRONG, 'SolutionIDWrong' TITLE_DIST_WRONG, 'NumWrong', TITLE_MEAN_ERROR, 'SolutionIDError' TITLE_DIST_ERROR, 'NumError']
