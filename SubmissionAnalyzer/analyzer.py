@@ -151,10 +151,10 @@ numTotalMeanWrong = 0
 numTotalMeanError = 0
 
 totalDistances = dict()
-totalDistances[TITLE_DIST] = list()
-totalDistances[TITLE_DIST_SUCCESS] = list()
-totalDistances[TITLE_DIST_WRONG] = list()
-totalDistances[TITLE_DIST_ERROR] = list()
+totalDistances[TITLE_DIST] = np.ndarray((0,1))
+totalDistances[TITLE_DIST_SUCCESS] = np.ndarray((0,1))
+totalDistances[TITLE_DIST_WRONG] = np.ndarray((0,1))
+totalDistances[TITLE_DIST_ERROR] = np.ndarray((0,1))
 
 #Go through every problem
 problem: ProblemDataEntry
@@ -244,12 +244,8 @@ for problem in allProblems.values():
        # totalMeans[TITLE_MEAN_ERROR].append(problem.meanError) 
 
     #Now we can compute distances from the mean...
-    # problem.distSuccess = distanceBetween(problem.meanSuccess, problem.mean)
-    # problem.distWrong   = distanceBetween(problem.meanSuccess, problem.mean)
-    # problem.distError   = distanceBetween(problem.meanSuccess, problem.mean)
-
     for solution in problem.allSolutions:
-        distance = distanceBetween(problem.mean, solution.vector)
+        distance = distanceBetween(problem.meanSuccess, solution.vector)
         entry = (distance, solution.solutionID)
         problem.distances.append(entry)
         
@@ -266,11 +262,22 @@ for problem in allProblems.values():
     problem.distSuccess.sort(reverse=False, key=lambda i: i[0]) #sort by most similar (smallest number)
     problem.distWrong.sort(reverse=False, key=lambda i: i[0]) #sort by most similar (smallest number)
     problem.distError.sort(reverse=False, key=lambda i: i[0]) #sort by most similar (smallest number)
+
+    for distance in problem.distances:
+        totalDistances[TITLE_DIST]          = np.append(totalDistances[TITLE_DIST], distance[0])
     
-    totalDistances[TITLE_DIST].extend(problem.distances)
-    totalDistances[TITLE_DIST_SUCCESS].extend(problem.distSuccess)
-    totalDistances[TITLE_DIST_WRONG].extend(problem.distWrong)
-    totalDistances[TITLE_DIST_ERROR].extend(problem.distError)
+    for distance in problem.distSuccess:
+        totalDistances[TITLE_DIST_SUCCESS]          = np.append(totalDistances[TITLE_DIST_SUCCESS], distance[0])
+
+    for distance in problem.distWrong:
+        totalDistances[TITLE_DIST_WRONG]          = np.append(totalDistances[TITLE_DIST_WRONG], distance[0])
+    
+    for distance in problem.distError:
+        totalDistances[TITLE_DIST_ERROR]          = np.append(totalDistances[TITLE_DIST_ERROR], distance[0])
+    # totalDistances[TITLE_DIST]          = np.append(totalDistances[TITLE_DIST], problem.distances)
+    # totalDistances[TITLE_DIST_SUCCESS]  = np.append(totalDistances[TITLE_DIST_SUCCESS], problem.distSuccess)
+    # totalDistances[TITLE_DIST_WRONG]    = np.append(totalDistances[TITLE_DIST_WRONG], problem.distWrong)
+    # totalDistances[TITLE_DIST_ERROR]    = np.append(totalDistances[TITLE_DIST_ERROR], problem.distError)
 
     #Write to file
     #problemFileName = outputTablePath + str(problem.qCode) + '_Analysis' + '.csv'
@@ -337,8 +344,12 @@ totalMeans[TITLE_MEAN_ERROR] /=   numTotalMeanError
 #Plot distance data in a box-and-whisker chart
 data = [totalDistances[TITLE_DIST], totalDistances[TITLE_DIST_SUCCESS], totalDistances[TITLE_DIST_WRONG], totalDistances[TITLE_DIST_ERROR]]
 figure = plt.figure(figsize=(12, 10))
-axes = figure.add_axes([0,0,1,1])
+axes = figure.add_axes([0.1,0.1,0.7,0.7])
+axes.set_title('Distances of AST Code Vectors from mean success \nwithin a given problem, aggregated across all ' + str(len(allProblems)) + ' problems')
+axes.set_ylabel('Euclidean distance from mean success')
+axes.set_xlabel('Solution result')
 boxPlot = axes.boxplot(data)
+plt.xticks([1, 2, 3, 4], ['All Solutions\n(n=' + str(len(totalDistances[TITLE_DIST])) + ')', 'Successful Solutions\n(n=' + str(len(totalDistances[TITLE_DIST_SUCCESS])) + ')', 'Wrong Solutions\n(n=' + str(len(totalDistances[TITLE_DIST_WRONG])) + ')', 'Runtime Errors\n(n=' + str(len(totalDistances[TITLE_DIST_ERROR])) + ')'])
 plt.show()
 
 figure.savefig(outputPath + 'meanDistancesFigure.png')
