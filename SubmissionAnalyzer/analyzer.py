@@ -97,8 +97,10 @@ allProblems = dict()#(str, ProblemDataEntry) #dict(str, list(CodeDataEntry))
 
 
 def distanceBetween(vectorA: np.ndarray, vectorB: np.ndarray):
-    displacement_vector = np.subtract(vectorA, vectorB)
-    distance = np.sqrt(displacement_vector.dot(displacement_vector))#tf.norm(displacement_vector).numpy()
+    cosine_sim = tf.losses.cosine_similarity(vectorA, vectorB)
+    return cosine_sim.numpy()
+    # displacement_vector = np.subtract(vectorA, vectorB)
+    # distance = np.sqrt(displacement_vector.dot(displacement_vector))#tf.norm(displacement_vector).numpy()
     return distance
 
 def computeSimilarity(entryA: CodeDataEntry, entryB: CodeDataEntry):
@@ -112,7 +114,7 @@ print('opening: ' + vectorTablePath + '\n')
 #     writer = csv.DictWriter(csvfile, fieldnames = columnNamesSolutions)
 #     writer.writeheader()
 
-problemFileName = outputPath + 'All_Analysis' + '.csv'
+problemFileName = outputPath + 'All_Analysis_CosineSimilarity' + '.csv'
 with open(problemFileName, 'a', newline='') as csvfile:
     writer = csv.DictWriter(csvfile, fieldnames = columnNamesProblems)
     writer.writeheader()
@@ -245,7 +247,7 @@ for problem in allProblems.values():
 
     #Now we can compute distances from the mean...
     for solution in problem.allSolutions:
-        distance = distanceBetween(problem.meanSuccess, solution.vector)
+        distance = distanceBetween(problem.mean, solution.vector)
         entry = (distance, solution.solutionID)
         problem.distances.append(entry)
         
@@ -344,9 +346,9 @@ totalMeans[TITLE_MEAN_ERROR] /=   numTotalMeanError
 #Plot distance data in a box-and-whisker chart
 data = [totalDistances[TITLE_DIST], totalDistances[TITLE_DIST_SUCCESS], totalDistances[TITLE_DIST_WRONG], totalDistances[TITLE_DIST_ERROR]]
 figure = plt.figure(figsize=(12, 10))
-axes = figure.add_axes([0.1,0.1,0.7,0.7])
-axes.set_title('Distances of AST Code Vectors from mean success \nwithin a given problem, aggregated across all ' + str(len(allProblems)) + ' problems')
-axes.set_ylabel('Euclidean distance from mean success')
+axes = figure.add_axes([0.1,0.1,0.8,0.8])
+axes.set_title('Cosine Distances of AST Code Vectors from mean \nwithin a given problem, aggregated across all ' + str(len(allProblems)) + ' problems')
+axes.set_ylabel('Cosine distance from mean')
 axes.set_xlabel('Solution result')
 boxPlot = axes.boxplot(data)
 plt.xticks([1, 2, 3, 4], ['All Solutions\n(n=' + str(len(totalDistances[TITLE_DIST])) + ')', 'Successful Solutions\n(n=' + str(len(totalDistances[TITLE_DIST_SUCCESS])) + ')', 'Wrong Solutions\n(n=' + str(len(totalDistances[TITLE_DIST_WRONG])) + ')', 'Runtime Errors\n(n=' + str(len(totalDistances[TITLE_DIST_ERROR])) + ')'])
