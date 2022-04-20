@@ -8,10 +8,10 @@ from tensorflow import losses
 import numpy as np
 
 #columnNamesProblems  = ['QCode', 'Mean', 'SolutionID', 'Distance', 'Radius', 'NumSolutions', 'MeanSuccess', 'DistSuccess', 'RadiusSuccess', 'NumSuccess', 'MeanWrong', 'DistWrong', 'RadiusWrong', 'NumWrong', 'MeanError', 'DistError', 'RadiusError', 'NumError']
-columnNamesProblems  = ['QCode', 'Mean', 'SolutionID', 'Distance', 'NumSolutions', 'MeanSuccess', 'SolutionIDSuccess', 'DistSuccess', 'NumSuccess', 'MeanWrong', 'SolutionIDWrong' 'DistWrong', 'NumWrong', 'MeanError', 'SolutionIDError' 'DistError', 'NumError']
+columnNamesProblems  = ['QCode', 'Mean', 'SolutionID', 'Distance', 'NumSolutions', 'MeanSuccess', 'SolutionIDSuccess', 'DistSuccess', 'NumSuccess', 'MeanWrong', 'SolutionIDWrong', 'DistWrong', 'NumWrong', 'MeanError', 'SolutionIDError', 'DistError', 'NumError']
 columnNamesSolutions = ['QCode', 'UserID', 'SolutionID', 'SourceFile',  'Status', 'TimeTaken', 'MemTaken', 'CodeName', 'PredictedName', 'Vector', 'MostSimilarCode', 'PlagiarismScore']
 vectorTablePath = 'D:/Projects/code2vec/outputs/vectors_09-04-2022_21-58-47-fixed.csv'
-outputTablePath = 'SubmissionAnalyzer/'
+outputTablePath = 'SubmissionAnalyzer/output/'
 
 
 class ProblemDataEntry:
@@ -100,6 +100,11 @@ print('opening: ' + vectorTablePath + '\n')
 # with open(outputTablePath, 'w', newline='') as csvfile:
 #     writer = csv.DictWriter(csvfile, fieldnames = columnNamesSolutions)
 #     writer.writeheader()
+
+problemFileName = outputTablePath + 'All_Analysis' + '.csv'
+with open(problemFileName, 'a', newline='') as csvfile:
+    writer = csv.DictWriter(csvfile, fieldnames = columnNamesProblems)
+    writer.writeheader()
 
 #Load solutions into ProblemDataEntry
 with open(vectorTablePath, 'r', newline='') as csvRead:
@@ -227,8 +232,9 @@ for problem in allProblems.values():
 
 
     #Write to file
-    problemFileName = outputTablePath + str(problem.qCode) + '_Analysis' + '.csv'
-    with open(problemFileName, 'w', newline='') as csvfile:
+    #problemFileName = outputTablePath + str(problem.qCode) + '_Analysis' + '.csv'
+    problemFileName = outputTablePath + 'All_Analysis' + '.csv'
+    with open(problemFileName, 'a', newline='') as csvfile:
         writer = csv.DictWriter(csvfile, fieldnames = columnNamesProblems)
         writer.writeheader()
 
@@ -239,15 +245,15 @@ for problem in allProblems.values():
         newRow['Distance'] = 0
         #newRow['Radius'] = problem.distances[len(problem.distances)-1]
         newRow['MeanSuccess'] = 'N/A' if problem.numSuccess < 1 else ' '.join(map(str, problem.meanSuccess))
-        newRow['DistSuccess'] = problem.distSuccess
+        #newRow['DistSuccess'] = problem.distSuccess
         #newRow['RadiusSuccess'] = problem.distSuccess[len(problem.distSuccess)-1]
         newRow['NumSuccess'] = problem.numSuccess
         newRow['MeanWrong'] = 'N/A' if problem.numWrong < 1 else' '.join(map(str, problem.meanWrong))
-        newRow['DistWrong'] = problem.distWrong
+        #newRow['DistWrong'] = problem.distWrong
         #newRow['RadiusWrong'] = problem.radiusWrong
         newRow['NumWrong'] = problem.numWrong
         newRow['MeanError'] = 'N/A' if problem.numError < 1 else' '.join(map(str, problem.meanError))
-        newRow['DistError'] = problem.distError
+        #newRow['DistError'] = problem.distError
         #newRow['RadiusError'] = problem.radiusError
         newRow['NumError'] = problem.numError
         writer.writerow(newRow)
