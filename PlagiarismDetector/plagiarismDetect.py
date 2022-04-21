@@ -5,8 +5,8 @@ from tensorflow import norm
 from tensorflow import losses
 import numpy as np
 columnNames = ['QCode', 'UserID', 'SolutionID', 'SourceFile',  'Status', 'TimeTaken', 'MemTaken', 'CodeName', 'PredictedName', 'Vector', 'MostSimilarCode', 'PlagiarismScore']
-vectorTablePath = 'D:/Projects/code2vec/outputs/vectors_08-04-2022_17-16-04.csv'
-outputTablePath = 'similarity.csv'
+vectorTablePath = 'D:/Projects/code2vec/outputs/vectors_09-04-2022_21-58-47-fixed.csv'
+outputTablePath = 'similarity-completeList.csv'
 
 class CodeDataEntry:
     qCode: str
@@ -34,7 +34,7 @@ class CodeDataEntry:
 #For each vector,
 #Find closest vectors
 #similarityScores
-NUM_KEEP_SIMILAR = 4
+NUM_KEEP_SIMILAR = 8
 
 #solutionID, code vector
 allCodeVectors = list()
@@ -44,7 +44,7 @@ def computeSimilarity(entryA: CodeDataEntry, entryB: CodeDataEntry):
     #return cosine_sim.numpy()
 
     displacement_vector = np.subtract(entryA.vector, entryB.vector)
-    distance = tf.norm(displacement_vector).numpy()
+    distance = np.sqrt(displacement_vector.dot(displacement_vector))
     return distance
 
 print('opening: ' + vectorTablePath + '\n')
