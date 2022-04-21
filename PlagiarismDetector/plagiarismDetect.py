@@ -34,7 +34,8 @@ class CodeDataEntry:
 #For each vector,
 #Find closest vectors
 #similarityScores
-NUM_KEEP_SIMILAR = 8
+NUM_KEEP_SIMILAR = int(8)
+MAX_BATCH_SIZE = int(10)
 
 #solutionID, code vector
 allCodeVectors = list()
@@ -88,38 +89,43 @@ with open(vectorTablePath, 'r', newline='') as csvRead:
         #     csvfile.close()
 
 numSolutions = len(allCodeVectors)
-for idxA in range(0, numSolutions):
-    for idxB in range(idxA + 1, numSolutions):
-        solutionA = allCodeVectors[idxA]
-        solutionB = allCodeVectors[idxB]
 
-        if(solutionA.qCode == solutionB.qCode):
-            if(solutionA.userID == solutionB.userID):
-                continue #do not bother checking for plagiarism between a user and themselves on multiple attempts at the same problem
+for batch in range(0, (numSolutions//MAX_BATCH_SIZE) + 1):
+    batchStartIndex = batch * MAX_BATCH_SIZE
+    batchEndIndex = min(batchStartIndex + MAX_BATCH_SIZE, numSolutions)
+    for idxA in range(batchStartIndex, batchEndIndex):
+        for idxB in range(idxA + 1, numSolutions):
+            solutionA = allCodeVectors[idxA]
+            solutionB = allCodeVectors[idxB]
 
-        similarityScore = computeSimilarity(solutionA, solutionB)
-        #Assign similarity scores
-        solutionA.similarities.append((similarityScore, solutionB.solutionID))
-        solutionB.similarities.append((similarityScore, solutionA.solutionID))
+            if(solutionA.qCode == solutionB.qCode):
+                if(solutionA.userID == solutionB.userID):
+                    continue #do not bother checking for plagiarism between a user and themselves on multiple attempts at the same problem
 
-solution: CodeDataEntry
-for solution in allCodeVectors:
-    solution.similarities.sort(reverse=False, key=lambda i: i[0])
-    solution.similarities = solution.similarities[0 : NUM_KEEP_SIMILAR]
+            similarityScore = computeSimilarity(solutionA, solutionB)
+            #Assign similarity scores
+            solutionA.similarities.append((similarityScore, solutionB.solutionID))
+            solutionB.similarities.append((similarityScore, solutionA.solutionID))
 
-    #write the similarity information
-    with open(outputTablePath, 'a', newline='') as csvfile:
-        writer = csv.DictWriter(csvfile, fieldnames = columnNames)
-        
-        newRow = dict()
-        newRow['QCode'] = solution.qCode
-        newRow['UserID'] = solution.userID
-        newRow['SourceFile'] = solution.sourceFile
-        newRow['SolutionID'] = solution.solutionID
-        newRow['Vector'] = ' '.join(map(str, solution.vector))
-        newRow['MostSimilarCode'] = ' '.join(map(str, solution.similarities))
-        newRow['PlagiarismScore'] = solution.similarities[0][0]
-        writer.writerow(newRow)
-        csvfile.close()
+
+    for solutionIndex in range(batchStartIndex, batchEndIndex):
+        solution = allCodeVectors[solutionIndex]
+        solution.similarities.sort(reverse=False, key=lambda i: i[0])
+        solution.similarities = solution.similarities[0 : NUM_KEEP_SIMILAR]
+
+        #write the similarity information
+        with open(outputTablePath, 'a', newline='') as csvfile:
+            writer = csv.DictWriter(csvfile, fieldnames = columnNames)
+            
+            newRow = dict()
+            newRow['QCode'] = solution.qCode
+            newRow['UserID'] = solution.userID
+            newRow['SourceFile'] = solution.sourceFile
+            newRow['SolutionID'] = solution.solutionID
+            newRow['Vector'] = ' '.join(map(str, solution.vector))
+            newRow['MostSimilarCode'] = ' '.join(map(str, solution.similarities))
+            newRow['PlagiarismScore'] = solution.similarities[0][0]
+            writer.writerow(newRow)
+            csvfile.close()
 
 print('done!\n')
